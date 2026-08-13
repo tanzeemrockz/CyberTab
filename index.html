@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberTab | New Tab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { deep: '#121215', matte: '#18181B', cyan: '#00F0FF' },
+                    fontFamily: { mono: ['JetBrains Mono', 'monospace'] },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-deep text-white min-h-screen flex flex-col items-center justify-center p-6 bg-cyan selection:text-black">
+    <main class="w-full max-w-2xl flex flex-col items-center gap-8 text-center">
+        <div>
+            <h1 id="clock" class="font-mono text-6xl sm:text-7xl font-black text-white tracking-tight">00:00:00</h1>
+            <p id="date" class="font-mono text-sm text-zinc-400 mt-2">Loading Date...</p>
+        </div>
+        <form id="search-form" onsubmit="executeSearch(event)" class="w-full bg-matte border border-zinc-800 focus-within:border-cyan rounded-xl p-2 flex items-center gap-3 shadow-lg transition-colors">
+            <input type="text" id="search-input" placeholder="Search or use /gh /yt /duck /ai" autocomplete="off" autofocus class="w-full bg-transparent text-white font-mono text-sm sm:text-base px-3 py-2 outline-none placeholder:text-zinc-600">  
+            <button type="submit" class="bg-cyan text-black font-mono font-bold text-xs px-4 py-2 rounded-lg hover:bg-white transition">Search</button>
+        </form>
+
+        <p class="text-xs font-mono text-zinc-600">Prefixes: <span class="text-zinc-400">/gh</span> (Github), <span class="text-zinc-400">/yt</span> (YouTube), <span class="text-zinc-400">/duck</span> (DuckDuckGo), <span class="text-zinc-400">/ai</span> (Duck.ai prompt)</p>
+    </main>
+    <script>
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString().split(' ')[0];
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        setInterval(updateTime, 1000)
+        updateTime();
+
+        function executeSearch(e) {
+            e.preventDefault();
+            const query = document.getElementById('search-input').value.trim();
+            
+            if (!query) return;
+
+            if (query.startsWith('/gh ')) {
+                window.location.href = `https://github.com/search?q=${encodeURIComponent(query.slice(4))}`;
+            } else if (query.startsWith('/yt ')) {
+                window.location.href = `https://youtube.com/results?search_query=${encodeURIComponent(query.slice(4))}`;
+            } else if (query.startsWith('/duck ')) {
+                window.location.href = `https://duckduckgo.com/?q=${encodeURIComponent(query.slice(6))}`;
+            } else if (query.startsWith('/ai ')) {
+                window.location.href = `https://duckduckgo.com/?q=!ai+${encodeURIComponent(query.slice(4))}`;
+            } else {
+                window.location.href = `https://google.com/search?q=${encodeURIComponent(query)}`;
+            }
+        }
+    </script>
+</body>
+</html>
