@@ -5,43 +5,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberTab | New Tab</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { deep: '#121215', matte: '#18181B', cyan: '#00F0FF' },
-                    fontFamily: { mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { deep: '#121215', matte: '#18181B', cyan: '#00F0FF', pink: '#FF007F' },
+                    fontFamily: { mono: ['JetBrains Mono', 'monospace'] }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-deep text-white min-h-screen flex flex-col items-center justify-center p-6 bg-cyan selection:text-black">
-    <main class="w-full max-w-2xl flex flex-col items-center gap-8 text-center">
-        <div>
-            <h1 id="clock" class="font-mono text-6xl sm:text-7xl font-black text-white tracking-tight">00:00:00</h1>
+<body class="bg-deep text-white min-h-screen flex flex-col justify-between p-6 selection:bg-cyan selection:text-black">
+
+    <main class="w-full max-w-4xl mx-auto flex flex-col gap-8 my-auto">
+        <div class="text-center">
+            <h1 id="clock" class="font-mono text-6xl sm:text-7xl font-black tracking-tight text-white">00:00:00</h1>
             <p id="date" class="font-mono text-sm text-zinc-400 mt-2">Loading Date...</p>
         </div>
-        <form id="search-form" onsubmit="executeSearch(event)" class="w-full bg-matte border border-zinc-800 focus-within:border-cyan rounded-xl p-2 flex items-center gap-3 shadow-lg transition-colors">
-            <input type="text" id="search-input" placeholder="Search or use /gh /yt /duck /ai" autocomplete="off" autofocus class="w-full bg-transparent text-white font-mono text-sm sm:text-base px-3 py-2 outline-none placeholder:text-zinc-600">  
+
+        <form id="search-form" onsubmit="executeSearch(event)" class="bg-matte border border-zinc-800 focus-within:border-cyan rounded-xl p-2 flex items-center gap-3 shadow-lg transition-colors">
+            <input type="text" id="search-input" placeholder="Search or use /gh /yt /duck /ai..." autocomplete="off" autofocus class="w-full bg-transparent text-white font-mono text-sm px-3 py-2 outline-none placeholder:text-zinc-600">
+            <select id="engine-select" onchange="changeEngine(this.value)" class="bg-deep text-xs font-mono text-zinc-400 p-2 rounded-lg border border-zinc-800 outline-none">
+                <option value="google">Google</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="bing">Bing</option>
+            </select>
             <button type="submit" class="bg-cyan text-black font-mono font-bold text-xs px-4 py-2 rounded-lg hover:bg-white transition">Search</button>
         </form>
 
-        <p class="text-xs font-mono text-zinc-600">Prefixes: <span class="text-zinc-400">/gh</span> (Github), <span class="text-zinc-400">/yt</span> (YouTube), <span class="text-zinc-400">/duck</span> (DuckDuckGo), <span class="text-zinc-400">/ai</span> (Duck.ai prompt)</p>
+        <div class="w-full">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-mono text-zinc-400 font-bold uppercase">bookmarks</span>
+                <button onclick="toggleBookmarkModal()" class="text-xs font-mono text-cyan hover:underline uppercase">+ add link</button>
+            </div>
+            <div id="bookmarks-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4"></div>
+        </div>
     </main>
+    
+    <div id="bookmark-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-6">
+        <div class="bg-matte border border-zinc-800 rounded-xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl">
+            <h3 class="font-mono font-bold text-sm text-white uppercase">add bookmark</h3>
+            <input type="text" id="bm-title" placeholder="Website Title (e.g. CyberSlayerCorpz)" class="bg-deep border border-zinc-800 text-xs p-3 rounded-lg outline-none text-white font-mono focus:border-cyan">
+            <input type="text" id="bm-url" placeholder="URL (e.g. tanzeemrockz.github.io)" class="bg-deep border border-zinc-800 text-xs p-3 rounded-lg outline-none text-white font-mono focus:border-cyan">
+            <div class="justify-end flex gap-2">
+                <button onclick="toggleBookmarkModal()" class="text-xs font-mono text-zinc-400 px-3 py-2">Cancel</button>
+                <button onclick="saveBookmark()" class="text-xs font-mono bg-cyan text-black font-bold px-4 py-2 rounded-lg hover:bg-white transition">Save</button>
+            </div>
+        </div>
+
+    </div>
+
     <script>
+        let defaultBookmarks = [
+            { title: 'CyberSlayerCorpz', url: 'https://tanzeemrockz.github.io/' },
+            { title: 'YouTube', url: 'https://youtube.com/' }
+            
+        ];
+
         function updateTime() {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString().split(' ')[0];
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
-        setInterval(updateTime, 1000)
+        setInterval(updateTime, 1000);
         updateTime();
 
+        // 2. Bookmarks Logic
+        function renderBookmarks() {
+            const grid = document.getElementById('bookmarks-grid');
+            const saved = JSON.parse(localStorage.getItem('cybertab_bookmarks')) || defaultBookmarks;
+            grid.innerHTML = '';
+
+            saved.forEach((bm, index) => {
+                const domain = bm.url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "").split('/')[0];
+                const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                const card = document.createElement('a');
+                card.href = bm.url.startsWith('http') ? bm.url : `https://${bm.url}`;
+                card.className = "bg-matte border border-zinc-800 p-4 rounded-xl flex flex-col items-center gap-2 relative group hover:border-cyan transition shadow-lg";
+                card.innerHTML = `
+                    <button onclick="deleteBookmark(event, ${index})" class="absolute top-1 right-2 text-zinc-600 hover:text-pink text-xs opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-xmark"></i></button>
+                    <img src="${iconUrl}" class="w-6 h-6 rounded object-contain">
+                    <span class="text-xs font-mono text-zinc-300 truncate max-w-full">${bm.title}</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleBookmarkModal() {
+            const modal = document.getElementById('bookmark-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        function saveBookmark() {
+            const title = document.getElementById('bm-title').value.trim();
+            const url = document.getElementById('bm-url').value.trim();
+            if (!title || !url) return;
+
+            const saved = JSON.parse(localStorage.getItem('cybertab_bookmarks')) || defaultBookmarks;
+            saved.push({ title, url });
+            localStorage.setItem('cybertab_bookmarks', JSON.stringify(saved));
+            
+            document.getElementById('bm-title').value = '';
+            document.getElementById('bm-url').value = '';
+            toggleBookmarkModal();
+            renderBookmarks();
+        }
+
+        function deleteBookmark(e, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            const saved = JSON.parse(localStorage.getItem('cybertab_bookmarks')) || defaultBookmarks;
+            saved.splice(index, 1);
+            localStorage.setItem('cybertab_bookmarks', JSON.stringify(saved));
+            renderBookmarks();
+        }
+
+        // 3. Search Logic
         function executeSearch(e) {
             e.preventDefault();
             const query = document.getElementById('search-input').value.trim();
-            
             if (!query) return;
 
             if (query.startsWith('/gh ')) {
@@ -53,9 +138,23 @@
             } else if (query.startsWith('/ai ')) {
                 window.location.href = `https://duckduckgo.com/?q=!ai+${encodeURIComponent(query.slice(4))}`;
             } else {
-                window.location.href = `https://google.com/search?q=${encodeURIComponent(query)}`;
+                const engine = localStorage.getItem('cybertab_engine') || 'google';
+                let searchUrl = `https://google.com/search?q=${encodeURIComponent(query)}`;
+                if (engine === 'duckduckgo') searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+                if (engine === 'bing') searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+                window.location.href = searchUrl;
             }
         }
+
+        function changeEngine(val) {
+            localStorage.setItem('cybertab_engine', val);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderBookmarks();
+            const savedEngine = localStorage.getItem('cybertab_engine') || 'google';
+            document.getElementById('engine-select').value = savedEngine;
+        });
     </script>
-</body>
+</body>            
 </html>
